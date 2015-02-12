@@ -1,0 +1,10 @@
+-------------------------------------------------------------------------------
+Test set: uk.ac.ncl.cs.csc8101.weblogcoursework.DataReaderTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.047 sec <<< FAILURE! - in uk.ac.ncl.cs.csc8101.weblogcoursework.DataReaderTest
+readDataFile(uk.ac.ncl.cs.csc8101.weblogcoursework.DataReaderTest)  Time elapsed: 0.007 sec  <<< ERROR!
+java.io.FileNotFoundException: \home\ubuntu\data\cassandra\csc8101_logfile_2015.gz (The system cannot find the path specified)
+	at java.io.FileInputStream.open(Native Method)
+	at java.io.FileInputStream.<init>(FileInputStream.java:138)
+	at uk.ac.ncl.cs.csc8101.weblogcoursework.DataReaderTest.readDataFile(DataReaderTest.java:47)
+

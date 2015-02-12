@@ -40,9 +40,9 @@ public class SiteSession {
     /**
      * Creates a new SiteSession instance based on its first hit.
      *
-     * @param id the session id
+     * @param id             the session id
      * @param firstHitMillis the time of the first hit in the session, in milliseconds since unix epoch
-     * @param url the url of the first hit
+     * @param url            the url of the first hit
      */
     public SiteSession(String id, long firstHitMillis, String url) {
         this.id = id;
@@ -74,19 +74,18 @@ public class SiteSession {
      * Modify the session by adding a new hit.
      *
      * @param hitMillis the time of the hit in the session, in milliseconds since unix epoch
-     * @param url the url of the hit
-     *
+     * @param url       the url of the hit
      * @throws java.lang.IllegalArgumentException if the time is less that the global max
-     * or after the session's timeout
+     *                                            or after the session's timeout
      */
     public void update(long hitMillis, String url) {
 
-        if(lastHitMillis > 0 && lastHitMillis+MAX_IDLE_MS < hitMillis) {
+        if (lastHitMillis > 0 && lastHitMillis + MAX_IDLE_MS < hitMillis) {
             throw new IllegalArgumentException("interval since last hit exceeds session timeout");
         }
         this.lastHitMillis = hitMillis;
 
-        if(hitMillis < globalLastHitMillis) {
+        if (hitMillis < globalLastHitMillis) {
             throw new IllegalArgumentException("hit processed out of order");
         }
         globalLastHitMillis = hitMillis;
@@ -102,7 +101,7 @@ public class SiteSession {
      * @return true if the session has expired, false otherwise
      */
     public boolean isExpired() {
-        return globalLastHitMillis-lastHitMillis > MAX_IDLE_MS;
+        return globalLastHitMillis - lastHitMillis > MAX_IDLE_MS;
     }
 
     /**

@@ -1,0 +1,10 @@
+-------------------------------------------------------------------------------
+Test set: uk.ac.ncl.cs.csc8101.weblogcoursework.MessageHandlerTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.001 sec <<< FAILURE! - in uk.ac.ncl.cs.csc8101.weblogcoursework.MessageHandlerTest
+parseRecord(uk.ac.ncl.cs.csc8101.weblogcoursework.MessageHandlerTest)  Time elapsed: 0 sec  <<< ERROR!
+java.lang.StringIndexOutOfBoundsException: String index out of range: -2
+	at java.lang.String.substring(String.java:1954)
+	at uk.ac.ncl.cs.csc8101.weblogcoursework.Parser.parseRecord(Parser.java:17)
+	at uk.ac.ncl.cs.csc8101.weblogcoursework.MessageHandlerTest.parseRecord(MessageHandlerTest.java:21)
+

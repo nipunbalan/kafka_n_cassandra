@@ -62,7 +62,6 @@ public class SiteSessionTest {
     public void expiryTest() {
 
         final AtomicReference<SiteSession> expiredSession = new AtomicReference<>(null);
-
         HashMap<String,SiteSession> sessions = new LinkedHashMap<String,SiteSession>() {
             protected boolean removeEldestEntry(Map.Entry eldest) {
                 SiteSession siteSession = (SiteSession)eldest.getValue();
@@ -72,8 +71,9 @@ public class SiteSessionTest {
                 }
                 return siteSession.isExpired();
             }
-        };
 
+
+        };
         SiteSession session = new SiteSession("a", 100, "testURL");
         sessions.put("a", session);
         assertEquals(1, sessions.size());
