@@ -36,7 +36,7 @@ public class LogEntryParser {
             logEntry[2] = message.substring(startIndex, parseIndex);
             return logEntry;
         } catch (IndexOutOfBoundsException e) {
-            logger.warn("Parsing Error! Record in Invalid Format: "+message);
+            logger.warn("Parsing Error! Record in Invalid Format: " + message);
           //  e.printStackTrace();
             return null;
         }

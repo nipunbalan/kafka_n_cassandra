@@ -45,14 +45,16 @@ public class MessageHandler {
 
     //  private static final AtomicReference<SiteSession> expiredSession = new AtomicReference<>(null);
     private static ArrayList<SiteSession> expiredSessions = new ArrayList<SiteSession>();
-    private static HashMap<String, SiteSession> siteSessions = new LinkedHashMap<String, SiteSession>(200000, .75F, true) {
+    private static HashMap<String, SiteSession> siteSessions = new LinkedHashMap<String, SiteSession>(20000, .75F, true) {
         protected boolean removeEldestEntry(Map.Entry eldest) {
-            SiteSession siteSession = (SiteSession) eldest.getValue();
-            boolean shouldExpire = siteSession.isExpired();
-            if (shouldExpire) {
-                expiredSessions.add(siteSession);
-            }
-            return siteSession.isExpired();
+          //  SiteSession siteSession = (SiteSession) eldest.getValue();
+          //  boolean shouldExpire = siteSession.isExpired();
+          //  if (shouldExpire) {
+              //  expiredSessions.add(siteSession);
+            expiredSessions.add((SiteSession)eldest.getValue());
+         //   }
+         //   return siteSession.isExpired();
+            return true;
         }
     };
 
