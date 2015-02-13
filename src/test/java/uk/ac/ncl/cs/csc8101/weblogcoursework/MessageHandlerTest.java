@@ -6,7 +6,13 @@ import org.joda.time.format.DateTimeFormatter;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Created by nipun on 2/12/2015.
@@ -58,6 +64,41 @@ public class MessageHandlerTest {
         msgHandler.close();
 
 
+    }
+
+    @Test
+    @Ignore
+    public void testSession()
+    {
+//        final AtomicReference<SiteSession> expiredSession = new AtomicReference<>(null);
+//        HashMap<String,SiteSession> sessions = new LinkedHashMap<String,SiteSession>() {
+//            protected boolean removeEldestEntry(Map.Entry eldest) {
+//                SiteSession siteSession = (SiteSession)eldest.getValue();
+//                boolean shouldExpire = siteSession.isExpired();
+//                if(shouldExpire) {
+//                    expiredSession.set(siteSession);
+//                }
+//                return siteSession.isExpired();
+//            }
+//
+//
+//        };
+//        SiteSession session = new SiteSession("a", 100, "testURL");
+//        sessions.put("a", session);
+//
+//        session = new SiteSession("b", 100, "testURL2");
+//        sessions.put("b", session);
+//
+//        session = new SiteSession("a", 101+SiteSession.MAX_IDLE_MS, "testURL");
+//
+//
+//        sessions.put("a", session);
+//
+//        assertEquals(1, sessions.size());
+//        assertNull(expiredSession.get());
+//        sessions.put("b", new SiteSession("b", 101 + SiteSession.MAX_IDLE_MS, "testURL"));
+//        assertEquals(1, sessions.size());
+//        assertEquals(session, expiredSession.get());
     }
 
 }

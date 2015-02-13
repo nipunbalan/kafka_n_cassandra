@@ -28,7 +28,9 @@ import java.util.concurrent.TimeUnit;
 public class SiteSession {
 
     public static long MAX_IDLE_MS = TimeUnit.MINUTES.toMillis(30);
-    private static long globalLastHitMillis;
+   // private static long globalLastHitMillis;
+   private long globalLastHitMillis;
+    private boolean isExpired = false;
 
     private final String id;
     private final long firstHitMillis;
@@ -75,13 +77,15 @@ public class SiteSession {
      *
      * @param hitMillis the time of the hit in the session, in milliseconds since unix epoch
      * @param url       the url of the hit
-     * @throws java.lang.IllegalArgumentException if the time is less that the global max
-     *                                            or after the session's timeout
+     *
+     * @return true if the session is updated, false if that session is expired
      */
-    public void update(long hitMillis, String url) {
+    public boolean update(long hitMillis, String url) {
 
         if (lastHitMillis > 0 && lastHitMillis + MAX_IDLE_MS < hitMillis) {
-            throw new IllegalArgumentException("interval since last hit exceeds session timeout");
+            isExpired=true;
+            return false;
+         //   throw new IllegalArgumentException("interval since last hit exceeds session timeout");
         }
         this.lastHitMillis = hitMillis;
 
@@ -92,6 +96,7 @@ public class SiteSession {
 
         hitCount++;
         hyperLogLog.offer(url);
+        return true;
     }
 
     /**
@@ -101,13 +106,15 @@ public class SiteSession {
      * @return true if the session has expired, false otherwise
      */
     public boolean isExpired() {
-        return globalLastHitMillis - lastHitMillis > MAX_IDLE_MS;
+        return isExpired;
+        //return globalLastHitMillis - lastHitMillis > MAX_IDLE_MS;
+
     }
 
     /**
      * Reset the global session 'clock'. Intended only for test use
      */
-    public static void resetGlobalMax() {
+    public void resetGlobalMax() {
         globalLastHitMillis = 0;
     }
 

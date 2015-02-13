@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
  */
 public class LogEntryParser {
     private final Logger logger = LoggerFactory.getLogger(LogEntryParser.class);
-    private final DateTimeFormatter df = DateTimeFormat.forPattern("dd/MMM/yyyy:hh:mm:ss Z");
+    private final DateTimeFormatter df = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z");
 
 
     public String[] parseRecord(String message) {
@@ -36,8 +36,8 @@ public class LogEntryParser {
             logEntry[2] = message.substring(startIndex, parseIndex);
             return logEntry;
         } catch (IndexOutOfBoundsException e) {
-            logger.warn("Parsing Error!\n");
-            e.printStackTrace();
+            logger.warn("Parsing Error! Record in Invalid Format: "+message);
+          //  e.printStackTrace();
             return null;
         }
     }

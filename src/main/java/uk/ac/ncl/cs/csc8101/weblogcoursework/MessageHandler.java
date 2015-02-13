@@ -38,18 +38,19 @@ public class MessageHandler {
     private final static Cluster cluster;
     private final static Session session;
     private final static String keySpaceName = "csc8101";
-    private final static String host = "127.0.0.1";
+    private final static String host = "localhost";
     private final static LogEntryParser logEntryParser = new LogEntryParser();
     private final static Logger logger = LoggerFactory.getLogger(MessageHandler.class);
 
 
-    private static final AtomicReference<SiteSession> expiredSession = new AtomicReference<>(null);
-    private static HashMap<String, SiteSession> siteSessions = new LinkedHashMap<String, SiteSession>() {
+    //  private static final AtomicReference<SiteSession> expiredSession = new AtomicReference<>(null);
+    private static ArrayList<SiteSession> expiredSessions = new ArrayList<SiteSession>();
+    private static HashMap<String, SiteSession> siteSessions = new LinkedHashMap<String, SiteSession>(200000, .75F, true) {
         protected boolean removeEldestEntry(Map.Entry eldest) {
             SiteSession siteSession = (SiteSession) eldest.getValue();
             boolean shouldExpire = siteSession.isExpired();
             if (shouldExpire) {
-                expiredSession.set(siteSession);
+                expiredSessions.add(siteSession);
             }
             return siteSession.isExpired();
         }
@@ -68,28 +69,35 @@ public class MessageHandler {
         bootstrapSession.close();
 
         session = cluster.connect(keySpaceName);
+        try {
+            session.execute("CREATE TABLE IF NOT EXISTS SESSION_INFO (" +
+                    " CLIENT_ID TEXT, " +
+                    " START_TIME TIMESTAMP, " +
+                    " END_TIME TIMESTAMP, " +
+                    " DISTINCT_URLS BIGINT, " +
+                    " HITS BIGINT, " +
+                    " PRIMARY KEY(CLIENT_ID,START_TIME) " +
+                    " )");
+            session.execute("CREATE TABLE IF NOT EXISTS  CLIENT_ACCESS ( " +
+                    "CLIENT_ID TEXT," +
+                    "URL_HLL BLOB," +
+                    "PRIMARY KEY(CLIENT_ID)" +
+                    ")");
 
-//        session.execute("CREATE TABLE IF NOT EXISTS SESSION_INFO (" +
-//                " CLIENT_ID TEXT, " +
-//                " START_TIME TIMESTAMP, " +
-//                " END_TIME TIMESTAMP, " +
-//                " DISTINCT_URLS BIGINT, " +
-//                " HITS BIGINT, " +
-//                " PRIMARY KEY(CLIENT_ID,START_TIME) " +
-//                " )");
-//
-//        session.execute("CREATE TABLE IF NOT EXISTS  CLIENT_ACCESS ( " +
-//                "CLIENT_ID TEXT," +
-//                "URL_HLL BLOB," +
-//                "PRIMARY KEY(CLIENT_ID)" +
-//                ")");
+        } catch (Exception e) {
+
+        }
 
         //TODO Add Table Creation Code
     }
 
     public static void close() {
         session.close();
-        saveAllSessions();
+        try {
+            saveAllSessions();
+        } catch (Exception e) {
+            logger.error("Error Saving all sessions");
+        }
         cluster.close();
     }
 
@@ -98,36 +106,53 @@ public class MessageHandler {
 
     public void handle(String message) {
 
-        System.out.println("Consumed: " + message);
-//        String[] logEntry = logEntryParser.parseRecord(message);
-//        if (logEntry == null) {
-//            logger.warn("Invalid Log Entry, Skipping Record");
-//            return;
-//        }
-//        if (siteSessions.containsKey(logEntry[0])) {
-//            updateSession(logEntry);
-//        } else {
-//            newSession(logEntry);
-//        }
-//
-//        saveSessionInfo(expiredSession.get());
-//        expiredSession.set(null);
+        //   System.out.println("Consumed: " + message);
+        try {
+            String[] logEntry = logEntryParser.parseRecord(message);
+            if (logEntry == null) {
+                logger.warn("Invalid Log Entry, Skipping Record");
+                return;
+            }
+            if (siteSessions.containsKey(logEntry[0])) {
+                updateSession(logEntry);
+            } else {
+                newSession(logEntry);
+            }
 
+            // Save all expired sessions in to DB
+            Iterator<SiteSession> expiredSessionIterator = expiredSessions.iterator();
+            SiteSession expiredSession = null;
+            while (expiredSessionIterator.hasNext()) {
+                expiredSession = expiredSessionIterator.next();
+                saveSessionInfo(expiredSession);
+                // Remove from the expired sessions list
+                expiredSessionIterator.remove();
+            }
 
-       SiteSession siteSession = new SiteSession("a", 100, "testURL");
-        saveSessionInfo(siteSession);
+            //  saveSessionInfo(expiredSession.get());
+            //   expiredSession.set(null);
+
+            //   SiteSession siteSession = new SiteSession("a", 100, "testURL");
+            //  saveSessionInfo(siteSession);
+        } catch (Exception e) {
+            logger.error("Error Saving  session");
+            e.printStackTrace();
+        }
 
     }
 
     public static boolean saveSessionInfo(SiteSession siteSession) {
-        DateTime startTime = new DateTime(siteSession.getFirstHitMillis() * 1000L);
-        DateTime endTime = new DateTime(siteSession.getLastHitMillis() * 1000L);
-        Insert insert = QueryBuilder.insertInto(keySpaceName, "SESSION_INFO")
-                .value("CLIENT_ID", siteSession.getId()).value("START_TIME", startTime)
-                .value("END_TIME", endTime)
-                .value("DISTINCT_URLS", siteSession.getHyperLogLog().cardinality())
-                .value("HITS", siteSession.getHitCount());
-        ResultSet results = session.execute(insert);
+        if (siteSession != null) {
+            logger.debug("siteSession:" + siteSession.getId() + "|" + siteSession.getFirstHitMillis() + "|" + siteSession.getLastHitMillis());
+            DateTime startTime = new DateTime(siteSession.getFirstHitMillis() * 1000L);
+            DateTime endTime = new DateTime(siteSession.getLastHitMillis() * 1000L);
+            Insert insert = QueryBuilder.insertInto(keySpaceName, "SESSION_INFO")
+                    .value("CLIENT_ID", siteSession.getId()).value("START_TIME", startTime.toDate())
+                    .value("END_TIME", endTime.toDate())
+                    .value("DISTINCT_URLS", siteSession.getHyperLogLog().cardinality())
+                    .value("HITS", siteSession.getHitCount());
+            ResultSet results = session.execute(insert);
+        }
         return true;
     }
 
@@ -137,10 +162,14 @@ public class MessageHandler {
         try {
             timeInMillis = logEntryParser.getTimeinMillis(logEntry[1]);
         } catch (Exception e) {
-            logger.warn("Date Parsing Error Skipping Record");
+            logger.warn("Error in updateSession while getting time :" + logEntry[1]);
+            e.printStackTrace();
             return false;
         }
-        siteSessions.get(logEntry[0]).update(timeInMillis, logEntry[2]);
+        if (!siteSessions.get(logEntry[0]).update(timeInMillis, logEntry[2])) {
+            expiredSessions.add(siteSessions.get(logEntry[0]));
+            siteSessions.remove(logEntry[0]);
+        }
         return true;
     }
 
@@ -150,7 +179,10 @@ public class MessageHandler {
         try {
             timeInMillis = logEntryParser.getTimeinMillis(logEntry[1]);
         } catch (Exception e) {
-            logger.warn("Date Parsing Error Skipping Record");
+
+            logger.warn("Error in newSession while getting time :" + logEntry[1]);
+            e.printStackTrace();
+            // logger.warn("Date Parsing Error Skipping Record");
             return false;
         }
         SiteSession session = new SiteSession(logEntry[0], timeInMillis, logEntry[2]);
@@ -166,7 +198,6 @@ public class MessageHandler {
         }
         return true;
     }
-
 
 
 }
